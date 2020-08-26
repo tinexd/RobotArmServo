@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "ValueSmoothingLib.h"
 #include "VarSpeedServo.h" // Lib-Ordner von github von Hand kopieren nach:
-                           // E:\Dokumente Privat\Elektronik\Programmierung Projekte\Platform_IO_Projekte\RobotArmServo\.pio\libdeps\uno\VarSpeedServo
+                           // E:\.......\RobotArmServo\.pio\libdeps\uno\VarSpeedServo
                            // weil VarSpeedServo-Lib über PlatformIO nicht für Arduino ist
 
 VarSpeedServo servo_hip;      // create servo object to control a servo
@@ -16,23 +16,23 @@ const int poti_pin_finger = A3;
 
 const int save_button_pin = 10;
 const int play_button_pin = 11;
-const int stop_button_pin = 2;
+const int stop_button_pin = 2;   // Interrupt-Pin
 
 int hip_min_pos = 0, hip_max_pos = 175, hip_target_pos;
-int shoulder_min_pos = 80, shoulder_max_pos = 140, shoulder_target_pos;
+int shoulder_min_pos = 80, shoulder_max_pos = 150, shoulder_target_pos;
 int elbow_min_pos = 30, elbow_max_pos = 120, elbow_target_pos;
 int finger_min_pos = 35, finger_max_pos = 135, finger_target_pos;
-int hip_speed = 15;      // 0=full speed, 1-255 slower to faster
-int shoulder_speed = 20; // 0=full speed, 1-255 slower to faster
-int elbow_speed = 20;    // 0=full speed, 1-255 slower to faster
-int finger_speed = 50;  // 0=full speed, 1-255 slower to faster
+int hip_speed = 20;      // 0=full speed, 1-255 slower to faster
+int shoulder_speed = 25; // 0=full speed, 1-255 slower to faster
+int elbow_speed = 25;    // 0=full speed, 1-255 slower to faster
+int finger_speed = 60;  // 0=full speed, 1-255 slower to faster
 
 int hip_actual_pos, shoulder_actual_pos, elbow_actual_pos, finger_actual_pos;
 int *saved_positions = NULL;
 int saved_positions_count = 0;
 
 int num_readings = 15;
-int debounce_time = 100;
+#define DEBOUNCE_TIME 100ul
 
 volatile bool isStopped = LOW;
 
@@ -41,8 +41,8 @@ SmoothedValue shoulderPotiValue(num_readings, poti_pin_shoulder);
 SmoothedValue elbowPotiValue(num_readings, poti_pin_elbow);
 SmoothedValue fingerPotiValue(num_readings, poti_pin_finger);
 
-bool SaveButtonIsPressed(int pin, unsigned long millis_now, int debounce_time);
-bool PlayButtonIsPressed(int pin, unsigned long millis_now, int debounce_time);
+bool SaveButtonIsPressed(int pin, unsigned long millis_now, unsigned long debounce_time);
+bool PlayButtonIsPressed(int pin, unsigned long millis_now, unsigned long debounce_time);
 void IsrFunction();
 
 void setup()
@@ -64,14 +64,14 @@ void setup()
   pinMode(save_button_pin, INPUT_PULLUP);
   pinMode(play_button_pin, INPUT_PULLUP);
   pinMode(stop_button_pin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(stop_button_pin), IsrFunction, FALLING); // 0,1 µF Kondensator an bin und GND, da sonst bai Play durch Störungen der Motoren der Interrupt triggert
+  attachInterrupt(digitalPinToInterrupt(stop_button_pin), IsrFunction, FALLING); // 0,1 µF Kondensator an Pin und GND, da sonst bei Play durch Störungen der Motoren der Interrupt triggert
 
   for (int i = 0; i < num_readings; i++)
   {
     hip_target_pos = map(hipPotiValue.calculateWithNewValue(), 0, 1023, hip_min_pos, hip_max_pos);
     shoulder_target_pos = map(shoulderPotiValue.calculateWithNewValue(), 0, 1023, shoulder_min_pos, shoulder_max_pos);
     elbow_target_pos = map(elbowPotiValue.calculateWithNewValue(), 0, 1023, elbow_min_pos, elbow_max_pos);
-    finger_target_pos = map(fingerPotiValue.calculateWithNewValue(), 0, 1023, finger_min_pos, finger_max_pos);
+    finger_target_pos = map(fingerPotiValue.calculateWithNewValue(), 1023, 0, finger_min_pos, finger_max_pos);
   }
 }
 
@@ -81,7 +81,7 @@ void loop()
   hip_target_pos = map(hipPotiValue.calculateWithNewValue(), 0, 1023, hip_min_pos, hip_max_pos);
   shoulder_target_pos = map(shoulderPotiValue.calculateWithNewValue(), 0, 1023, shoulder_min_pos, shoulder_max_pos);
   elbow_target_pos = map(elbowPotiValue.calculateWithNewValue(), 0, 1023, elbow_min_pos, elbow_max_pos);
-  finger_target_pos = map(fingerPotiValue.calculateWithNewValue(), 0, 1023, finger_min_pos, finger_max_pos);
+  finger_target_pos = map(fingerPotiValue.calculateWithNewValue(), 1023, 0, finger_min_pos, finger_max_pos);
 
   servo_hip.write(hip_target_pos, hip_speed, true);                // tell servo to go to position in variable 'pos'
   servo_shoulder.write(shoulder_target_pos, shoulder_speed, true); // tell servo to go to position in variable 'pos'
@@ -95,12 +95,12 @@ void loop()
   // Serial.println();
   // delay(100);
 
-  if (SaveButtonIsPressed(save_button_pin, millis_now, debounce_time))
+  if (SaveButtonIsPressed(save_button_pin, millis_now, DEBOUNCE_TIME))
   {
     saved_positions_count++;
     if (saved_positions == NULL)
     {
-      saved_positions = (int *)calloc(4 * saved_positions_count, sizeof(int)); // calloc initialisiert mit 0  / 4 * weil immer 4 Poti-Werte gespeichert werden müssen
+      saved_positions = (int *)calloc(4 * saved_positions_count, sizeof(int)); // calloc initialisiert mit 0; 4 * weil immer 4 Poti-Werte gespeichert werden müssen
       if (saved_positions == NULL)
         Serial.println("Speicher reservieren nicht möglich!");
       else
@@ -121,7 +121,7 @@ void loop()
     saved_positions[4 * saved_positions_count - 1] = finger_target_pos;   // für ersten Durchlauf -> 4 * 1 - 1 = 3 -> Postion 3 im Array
   }
 
-  if (PlayButtonIsPressed(play_button_pin, millis_now, debounce_time))
+  if (PlayButtonIsPressed(play_button_pin, millis_now, DEBOUNCE_TIME))
   {
     Serial.println("Play!");
     while (!isStopped)
@@ -152,13 +152,13 @@ void loop()
   }
 }
 
-bool SaveButtonIsPressed(int pin, unsigned long millis_now, int debounce_time)
+bool SaveButtonIsPressed(int pin, unsigned long millis_now, unsigned long debounce_time)
 {
   static unsigned long last_millis_button = 0;
   static bool button_was_pushed = LOW;
   bool button_is_pushed = !digitalRead(pin); // betätigt ist LOW
 
-  if (button_is_pushed && !button_was_pushed && millis_now - last_millis_button >= debounce_time)
+  if (button_is_pushed && !button_was_pushed && millis_now - last_millis_button >= DEBOUNCE_TIME)
   { // wenn fallende Flanke erkannt wurde und die Entprellzeit abgelaufen ist, wird der Tastendruck weiterverarbeitet
     last_millis_button = millis_now;
     button_was_pushed = button_is_pushed;
@@ -171,13 +171,13 @@ bool SaveButtonIsPressed(int pin, unsigned long millis_now, int debounce_time)
   }
 }
 
-bool PlayButtonIsPressed(int pin, unsigned long millis_now, int debounce_time)
+bool PlayButtonIsPressed(int pin, unsigned long millis_now, unsigned long debounce_time)
 {
   static unsigned long last_millis_button = 0;
   static bool button_was_pushed = LOW;
   bool button_is_pushed = !digitalRead(pin); // betätigt ist LOW
 
-  if (button_is_pushed && !button_was_pushed && millis_now - last_millis_button >= debounce_time)
+  if (button_is_pushed && !button_was_pushed && millis_now - last_millis_button >= DEBOUNCE_TIME)
   { // wenn fallende Flanke erkannt wurde und die Entprellzeit abgelaufen ist, wird der Tastendruck weiterverarbeitet
     last_millis_button = millis_now;
     button_was_pushed = button_is_pushed;
