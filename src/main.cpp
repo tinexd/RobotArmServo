@@ -68,7 +68,7 @@ void setup()
 
   for (int i = 0; i < num_readings; i++)
   {
-    hip_target_pos = map(hipPotiValue.calculateWithNewValue(), 0, 1023, hip_min_pos, hip_max_pos);
+    hip_target_pos = map(hipPotiValue.calculateWithNewValue(), 1023, 0, hip_min_pos, hip_max_pos);
     shoulder_target_pos = map(shoulderPotiValue.calculateWithNewValue(), 0, 1023, shoulder_min_pos, shoulder_max_pos);
     elbow_target_pos = map(elbowPotiValue.calculateWithNewValue(), 0, 1023, elbow_min_pos, elbow_max_pos);
     finger_target_pos = map(fingerPotiValue.calculateWithNewValue(), 1023, 0, finger_min_pos, finger_max_pos);
@@ -78,7 +78,7 @@ void setup()
 void loop()
 {
   unsigned long millis_now = millis();
-  hip_target_pos = map(hipPotiValue.calculateWithNewValue(), 0, 1023, hip_min_pos, hip_max_pos);
+  hip_target_pos = map(hipPotiValue.calculateWithNewValue(), 1023, 0, hip_min_pos, hip_max_pos);
   shoulder_target_pos = map(shoulderPotiValue.calculateWithNewValue(), 0, 1023, shoulder_min_pos, shoulder_max_pos);
   elbow_target_pos = map(elbowPotiValue.calculateWithNewValue(), 0, 1023, elbow_min_pos, elbow_max_pos);
   finger_target_pos = map(fingerPotiValue.calculateWithNewValue(), 1023, 0, finger_min_pos, finger_max_pos);
