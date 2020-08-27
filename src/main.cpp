@@ -21,7 +21,7 @@ const int stop_button_pin = 2;   // Interrupt-Pin
 int hip_min_pos = 0, hip_max_pos = 175, hip_target_pos;
 int shoulder_min_pos = 80, shoulder_max_pos = 150, shoulder_target_pos;
 int elbow_min_pos = 30, elbow_max_pos = 120, elbow_target_pos;
-int finger_min_pos = 23, finger_max_pos = 133, finger_target_pos;
+int finger_min_pos = 28, finger_max_pos = 128, finger_target_pos;
 int hip_speed = 15;      // 0=full speed, 1-255 slower to faster
 int shoulder_speed = 22; // 0=full speed, 1-255 slower to faster
 int elbow_speed = 20;    // 0=full speed, 1-255 slower to faster
