@@ -22,9 +22,9 @@ int hip_min_pos = 0, hip_max_pos = 175, hip_target_pos;
 int shoulder_min_pos = 80, shoulder_max_pos = 150, shoulder_target_pos;
 int elbow_min_pos = 30, elbow_max_pos = 120, elbow_target_pos;
 int finger_min_pos = 35, finger_max_pos = 135, finger_target_pos;
-int hip_speed = 20;      // 0=full speed, 1-255 slower to faster
-int shoulder_speed = 25; // 0=full speed, 1-255 slower to faster
-int elbow_speed = 25;    // 0=full speed, 1-255 slower to faster
+int hip_speed = 15;      // 0=full speed, 1-255 slower to faster
+int shoulder_speed = 22; // 0=full speed, 1-255 slower to faster
+int elbow_speed = 20;    // 0=full speed, 1-255 slower to faster
 int finger_speed = 60;  // 0=full speed, 1-255 slower to faster
 
 int hip_actual_pos, shoulder_actual_pos, elbow_actual_pos, finger_actual_pos;
